@@ -430,5 +430,5 @@ double AIPlayer::MiHeuristica(const Parchis &estado, int jugador)
 
         swap(my_colors, op_colors);
     }
-    return puntuaciones[0] - puntuaciones[1];
+    return puntuaciones[0] - 2*puntuaciones[1];
 }
