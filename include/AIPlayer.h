@@ -93,8 +93,7 @@ class AIPlayer: public Player{
         //double Poda_AlfaBeta(const Parchis &actual, int jugador, int profundidad, int profundidad_max, color &c_piece, int &id_piece, int &dice, double alpha, double beta, double (*heuristic)(const Parchis &, int)) const;
 };
 
-
-double AlfaBetaRecursivo(const Parchis& actual, const int& profundidad, const int& Max_Player, double alpha, double beta, double (*heuristic)(const Parchis&, int));
+double AlfaBetaRecursivo(const Parchis& actual, const int& profundidad, const int& Max_Player, const double& alpha, const double& beta, double (*heuristic)(const Parchis&, int));
 
 
 #endif

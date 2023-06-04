@@ -29,17 +29,17 @@ void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
     switch (id)
     {
     case 0:
-        cout << "PODA ALFA BETA" << endl;
-        AlfaBeta(c_piece, id_piece, dice, MiHeuristica);
+        cout << "PODA ALFA BETA VALORACIONTEST" << endl;
+        AlfaBeta(c_piece, id_piece, dice, ValoracionTest);
+        cout << "=================================================" << endl;
         cout << "Tiempo invertido: " << (double)(clock() - inicio) / CLOCKS_PER_SEC << endl;
         cout << "Hijos explorados: " << hijosExplorados << endl;
         cout << "=================================================" << endl;
         hijosExplorados = 0;
         break;
     case 1:
-        cout << "PODA ALFA BETA" << endl;
-        AlfaBeta(c_piece, id_piece, dice, ValoracionTest);
-        cout << "=================================================" << endl;
+        cout << "PODA ALFA BETA MIHEURISTICA" << endl;
+        AlfaBeta(c_piece, id_piece, dice, MiHeuristica);
         cout << "Tiempo invertido: " << (double)(clock() - inicio) / CLOCKS_PER_SEC << endl;
         cout << "Hijos explorados: " << hijosExplorados << endl;
         cout << "=================================================" << endl;
@@ -48,54 +48,42 @@ void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
     }
 }
 
-
-bool print=false;
 // =================================================
-// MINIMAX =========================================
+// ALFABETA =========================================
 // =================================================
-double AlfaBetaRecursivo(const Parchis &current, const int &profundidad, const int &Max_Player, double alpha, double beta, double (*heuristic)(const Parchis &, int))
+bool print = true;
+double AlfaBetaRecursivo(const Parchis &current, const int &profundidad, const int &Max_Player, const double &alpha, const double &beta, double (*heuristic)(const Parchis &, int))
 {
-    double resultado = 0.0;
-    if (profundidad == (PROFUNDIDAD_ALFABETA))
+    double resultado;
+    if (profundidad == PROFUNDIDAD_ALFABETA)
     {
-        resultado = heuristic(current, current.getCurrentPlayerId());
-        cout << string(profundidad, '\t') << "Vk: " << resultado << endl;
+        resultado = heuristic(current, Max_Player);
+        // if (print) cout << string(profundidad,'\t') << "Vk: " << resultado << endl;
         return resultado;
     }
     else
     {
+        bool isMax = current.getCurrentPlayerId() == Max_Player;
+        double currentAlpha = alpha, currentBeta = beta;
         ParchisBros hijos = current.getChildren();
-        bool isMax = (current.getCurrentPlayerId() == Max_Player);
         int i = 0;
-        if (print) cout << string(profundidad, '\t') << "Nodo current: " << ((isMax) ? "MAX " : "MIN ") << alpha << " " << beta << endl;
+        // if (print) cout << string(profundidad, '\t') << "Nodo actual: " << ((isMax) ? "MAX" : "MIN") << " alfa beta: " << alpha << " " << beta << endl;
         for (ParchisBros::Iterator it = hijos.begin(); it != hijos.end(); ++it)
         {
-            // if (print) cout << string(profundidad+1, '\t') << "Analizando hijo " << i  << ". Movimiento elegido: " << str(it.getMovedColor()) << " " << it.getMovedPieceId() << " " << it.getMovedDiceValue() << endl;
-            double Vk = AlfaBetaRecursivo(*it, profundidad + 1, Max_Player, alpha, beta, heuristic);
-            ++i;
-            ++hijosExplorados;
-            
-            if (isMax && (Vk>alpha))
-                alpha = Vk;
-            if (!isMax && (Vk<beta))
-                beta = Vk;
-            
-                
-            if (print) cout << string(profundidad, '\t') << "Alpha Beta: " << alpha << " " << beta << endl;
-            if (print) cout << string(profundidad, '\t') << "==================================================" << endl;
+            double Vk = AlfaBetaRecursivo(*it, profundidad + 1, Max_Player, currentAlpha, currentBeta, heuristic);
 
-            if (isMax && (alpha>=beta)){
-                if (print) cout << string(profundidad, '\t') << "Vk: " << beta << " Devuelvo por alfa>=beta" << endl;
-                return alpha;
-            }
-            if (!isMax && (alpha>=beta)) {
-                if (print) cout << string(profundidad, '\t') << "Vk: " << alpha << " Devuelvo por alfa>=beta" << endl;
-                return beta;
-            }
+            if (isMax && (Vk > currentAlpha))
+                currentAlpha = Vk;
+            if (!isMax && (Vk < currentBeta))
+                currentBeta = Vk;
+
+            if (currentAlpha >= currentBeta)
+                break;
         }
-        resultado = (isMax) ? alpha : beta;
-        if (print) cout << string(profundidad, '\t') << "Vk: " << resultado << " Devuelvo por k=b" << endl;
-        return resultado;
+        if (isMax)
+            return currentAlpha;
+        else
+            return currentBeta;
     }
 }
 
@@ -107,23 +95,23 @@ void AIPlayer::AlfaBeta(color &c_piece, int &id_piece, int &dice, double (*heuri
     double max;
     int i = 0;
     // cout << "MAX_PLAYER: " << Max_Player << endl;
-    cout << "Nodo actual: MAX " << alpha << " " << beta << endl;
+    // cout << "Nodo actual: MAX " << alpha << " " << beta << endl;
     for (ParchisBros::Iterator it = hijos.begin(); it != hijos.end(); ++it)
     {
         // cout << "Analizando hijo " << i << ". Movimiento elegido: " << str(it.getMovedColor()) << " " << it.getMovedPieceId() << " " << it.getMovedDiceValue() << endl;
         clock_t inicio = clock();
-        print = true;
         double Vk = AlfaBetaRecursivo(*it, 1, Max_Player, alpha, beta, heuristic);
-        break;
         // cout << "Tiempo en hijo: " << i << ": " << (double)(clock()-inicio)/CLOCKS_PER_SEC << endl;
         if (Vk > alpha)
             alpha = Vk;
-        if (print) cout << "Alpha Beta " << alpha << " " << beta << endl;
-        if (print) cout << "================================================" << endl;
-        ++i;
+        bool print = true;
+        // if (print) cout << "Vk hijo: " << i << ": " << Vk << endl;
+        // if (print) cout << "Alpha Beta " << alpha << " " << beta << endl;
+        // if (print) cout << "================================================" << endl;
         ++hijosExplorados;
-        if (it == hijos.begin())
+        if (i == 0)
         {
+            // cout << "Actualizo" << endl;
             max = Vk;
             c_piece = it.getMovedColor();
             id_piece = it.getMovedPieceId();
@@ -133,12 +121,14 @@ void AIPlayer::AlfaBeta(color &c_piece, int &id_piece, int &dice, double (*heuri
         {
             if (Vk > max)
             {
+                // cout << "Actualizo" << endl;
                 max = Vk;
                 c_piece = it.getMovedColor();
                 id_piece = it.getMovedPieceId();
                 dice = it.getMovedDiceValue();
             }
         }
+        ++i;
     }
     cout << "Valor de heurística encontrado por elección: " << max << endl;
 }
@@ -355,6 +345,30 @@ double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
     }
 }
 
+bool estaSegura(const Parchis &estado, int jugadorActual, const color &c, const int p)
+{
+    bool segura = true;
+    vector<color> opColors = estado.getPlayerColors((jugadorActual + 1) % 2);
+    for (int i = 0; i < opColors.size() && segura; i++)
+    {
+        for (int j = 0; j < num_pieces && segura; j++)
+        {
+            int dist = estado.distanceBoxtoBox(opColors[i], j, c, p);
+            vector<int> oponentDices = estado.getAvailableNormalDices((jugadorActual + 1) % 2);
+            auto dado = find(oponentDices.begin(), oponentDices.end(), dist);
+            if (dado != oponentDices.end())
+            {
+                segura = 
+                (estado.isSafePiece(c, p) && estado.getBoard().getPiece(opColors[i], j).get_type()==star_piece) // solo puede comernos si es estrella estando en una casilla segura
+                or (!estado.isSafePiece(c, p) && estado.getBoard().getPiece(c,p).get_type()==star_piece);
+                // if (!segura)
+                //     cout << "No es segura porque " << str(opColors[i]) << " en " << estado.getBoard().getPiece(opColors[i], j).get_box().num << " se puede comer a " << str(c) << " en " << estado.getBoard().getPiece(c, p).get_box().num << " moviendo " << *dado << endl;
+            }
+        }
+    }
+    return segura;
+}
+
 double AIPlayer::MiHeuristica(const Parchis &estado, int jugador)
 {
     int ganador = estado.getWinner();
@@ -364,57 +378,57 @@ double AIPlayer::MiHeuristica(const Parchis &estado, int jugador)
     puntuaciones[0] = puntuaciones[1] = 0.0;
     if (ganador == jugador)
         return gana;
-    else
+    else if (ganador == oponente)
         return pierde;
-
-    // Colores del jugador actual y del oponente
-    vector<color> current_colors = estado.getPlayerColors(jugador);
+    // Colores que juega mi jugador y colores del oponente
+    vector<color> my_colors = estado.getPlayerColors(jugador);
     vector<color> op_colors = estado.getPlayerColors(oponente);
 
-    // 1. Puntuamos positivamente que se coma un oponente
-    if (estado.isEatingMove())
-        puntuaciones[0] += 50;
-    // Recorremoslos dos jugadores
-    for (int jugador = 0; jugador < 2; ++jugador)
+    // if (estado.isEatingMove())
+    //     puntuaciones[jugador]+=50;
+    // Recorro fichas jugador y oponente
+    for (int jugadorActual = 0; jugadorActual < 2; jugadorActual++)
     {
-        for (int i = 0; i < current_colors.size(); ++i)
+        int betterValue = static_cast<int>(pierde);
+        for (int i = 0; i < my_colors.size(); i++)
         {
-            color c = current_colors[i];
-            for (int j = 0; j < num_pieces; ++i)
+            color c = my_colors[i];
+            // Valoro que haya fichas en el objetivo
+            // puntuaciones[jugadorActual] += 10 * estado.piecesAtGoal(c);
+            // Valoro que las fichas estén seguras
+            int cont = 0;
+            for (int j = 0; j < num_pieces; ++j)
             {
-                Piece ficha = estado.getBoard().getPiece(c, j);
-                // 2. Acumulamos las casillas ya avanzadas
-                puntuaciones[jugador] += (74 - estado.distanceToGoal(c, j));
-                // 3. Valoramos que haya muros del color que estamos mirando
-                puntuaciones[jugador] += ((estado.isWall(ficha.get_box()) == c) ? 8 : 0);
-                // 4. Valoramos que esté en una casilla segura
-                if (estado.isSafePiece(c, j))
-                    puntuaciones[jugador] += 15;
-                // 5. Si no es una casilla segura, buscamos el oponente más cercano,
-                // si está a mínimo 12 casillas, podemos considerarlo segura pero no tanto
+                if (estaSegura(estado, (jugadorActual + jugador) % 2, c, j))
+                // if (estado.isSafePiece(c, j))
+                {
+                    puntuaciones[jugadorActual] += (74 - estado.distanceToGoal(c, j));
+                }
                 else
                 {
-                    bool esSegura = true;
-                    for (int i_op = 0; i_op < op_colors.size() && esSegura; ++i_op)
-                    {
-                        color c_op = op_colors[i_op];
-                        for (int j_op = 0; j_op < num_pieces && esSegura; ++j_op)
-                        {
-                            int dist = estado.distanceBoxtoBox(c, j, c_op, j_op);
-                            if (dist < 12)
-                                esSegura = false;
-                        }
-                        if (esSegura)
-                            puntuaciones[jugador] += 5;
-                    }
-                    // 6. Si estamos en las casillas de la cola se valora
-                    puntuaciones[jugador] += ((ficha.get_box().type == final_queue) ? 5 : 0);
-                    // 7. Si ya está en el objetivo también se valora
-                    puntuaciones[jugador] += ((ficha.get_box().type == goal) ? 15 : 0);
+                    puntuaciones[jugadorActual] -= (74 - estado.distanceToGoal(c, j));
                 }
             }
-            swap(current_colors, op_colors);
+
+            int acumulacion = 0;
+            // Heurística = min(3*72-avg(distanciasColor1), 3*72-avg(distanciaColor2))
+            for (int j = 0; j < num_pieces; j++)
+            {
+                int dist = estado.distanceToGoal(c, j);
+                int val = 3 * (74 - dist);
+                acumulacion += val;
+            }
+            puntuaciones[jugadorActual] += acumulacion / num_pieces;
+            // acumulacion = 0;
+            // if (acumulacion>betterValue) {
+            //     betterValue = acumulacion;
+            // //     // cout << "betterValue:" << betterValue << endl;
+            // }
+            acumulacion = 0;
         }
-        return puntuaciones[0] - puntuaciones[1];
+        // puntuaciones[jugadorActual] += betterValue;
+
+        swap(my_colors, op_colors);
     }
+    return puntuaciones[0] - puntuaciones[1];
 }
