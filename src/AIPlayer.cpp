@@ -408,6 +408,9 @@ double AIPlayer::MiHeuristica(const Parchis &estado, int jugador)
     vector<color> my_colors = estado.getPlayerColors(jugador);
     vector<color> op_colors = estado.getPlayerColors(oponente);
 
+    vector<int> oponentDices = estado.getAllDices(oponente);
+    vector<int> dices = estado.getAllDices(jugador);
+
     // Recorro fichas jugador y oponente
     for (int jugadorActual = 0; jugadorActual < 2; jugadorActual++)
     {
@@ -417,18 +420,17 @@ double AIPlayer::MiHeuristica(const Parchis &estado, int jugador)
             color c = my_colors[i];
             int cont = 0;
 
+
             int acumulacion = 0;
             for (int j = 0; j < num_pieces; j++)
             {
                 int dist = estado.distanceToGoal(c, j);
-                if (!estado.isSafePiece(c,j))
-                    puntuaciones[jugadorActual] -= (74-estado.distanceToGoal(c,j));
+                if (estado.isSafePiece(c,j))
+                    puntuaciones[jugadorActual] += (74-dist);
+                else
+                    puntuaciones[jugadorActual] -= (74-dist);
 
                 int val = 3*(74 - dist);
-                // if (estado.piecesAtGoal(c)>0)
-                //     val *= estado.piecesAtGoal(c);
-                // if (estado.piecesAtHome(c)>0)
-                //     val /= estado.piecesAtHome(c);
                 acumulacion += val;
             }
             puntuaciones[jugadorActual] += acumulacion / num_pieces;
