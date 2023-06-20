@@ -46,23 +46,15 @@ void AIPlayer::think(color &c_piece, int &id_piece, int &dice) const
         hijosExplorados = 0;
         break;
     case 2:
-        cout << "PODA ALFA BETA MiHeuristicaSafeBox" << endl;
-        AlfaBeta(c_piece, id_piece, dice, MiHeuristicaSafeBox);
+        cout << "PODA ALFA BETA MIHEURISTICASAFEPIECE" << endl;
+        AlfaBeta(c_piece, id_piece, dice, MiHeuristicaSafePiece);
         cout << "Tiempo invertido: " << (double)(clock() - inicio) / CLOCKS_PER_SEC << endl;
         cout << "Hijos explorados: " << hijosExplorados << endl;
         cout << "=================================================" << endl;
         hijosExplorados = 0;
         break;
     case 3:
-        cout << "PODA ALFA BETA MiHeuristicaSafeMejorado" << endl;
-        AlfaBeta(c_piece, id_piece, dice, MiHeuristicaSafeMejorado);
-        cout << "Tiempo invertido: " << (double)(clock() - inicio) / CLOCKS_PER_SEC << endl;
-        cout << "Hijos explorados: " << hijosExplorados << endl;
-        cout << "=================================================" << endl;
-        hijosExplorados = 0;
-        break;
-    case 4:
-        cout << "PODA ALFA BETA IntentoMejora" << endl;
+        cout << "PODA ALFA BETA MIHEURISTICASAFEMEJORADO" << endl;
         AlfaBeta(c_piece, id_piece, dice, MiHeuristicaSafeMejorado);
         cout << "Tiempo invertido: " << (double)(clock() - inicio) / CLOCKS_PER_SEC << endl;
         cout << "Hijos explorados: " << hijosExplorados << endl;
@@ -382,9 +374,17 @@ bool estaSegura(const Parchis &estado, int jugadorActual, const color &c, const 
             auto dado = find(oponentDices.begin(), oponentDices.end(), dist);
             if (dado != oponentDices.end())
             {
-                segura =                                                             // HABÍA UN ERROR != SE HA CAMBIADO POR ==
-                    (estado.isSafePiece(c, p) && estado.getBoard().getPiece(opColors[i], j).get_type() != star_piece) // solo puede comernos si es estrella estando en una casilla segura
-                    or (!estado.isSafePiece(c, p) && estado.getBoard().getPiece(c, p).get_type() == star_piece);
+                if (estado.isSafePiece(c, p))
+                {
+                    if (estado.getBoard().getPiece(opColors[i], j).get_type() == star_piece)
+                        segura = false;
+                }
+                else
+                {
+                    if (estado.getBoard().getPiece(c, p).get_type() != star_piece and
+                        estado.getBoard().getPiece(c, p).get_type() != boo_piece)
+                        segura = false;
+                }
                 // if (!segura)
                 //     cout << "No es segura porque " << str(opColors[i]) << " en " << estado.getBoard().getPiece(opColors[i], j).get_box().num << " se puede comer a " << str(c) << " en " << estado.getBoard().getPiece(c, p).get_box().num << " moviendo " << *dado << endl;
             }
@@ -408,106 +408,8 @@ double AIPlayer::MiHeuristica(const Parchis &estado, int jugador)
     vector<color> my_colors = estado.getPlayerColors(jugador);
     vector<color> op_colors = estado.getPlayerColors(oponente);
 
-    vector<int> oponentDices = estado.getAllDices(oponente);
-    vector<int> dices = estado.getAllDices(jugador);
-
-    // Recorro fichas jugador y oponente
-    for (int jugadorActual = 0; jugadorActual < 2; jugadorActual++)
-    {
-        int betterValue = static_cast<int>(pierde);
-        for (int i = 0; i < my_colors.size(); i++)
-        {
-            color c = my_colors[i];
-            int cont = 0;
-
-
-            int acumulacion = 0;
-            for (int j = 0; j < num_pieces; j++)
-            {
-                int dist = estado.distanceToGoal(c, j);
-                if (estado.isSafePiece(c,j))
-                    puntuaciones[jugadorActual] += (74-dist);
-                else
-                    puntuaciones[jugadorActual] -= (74-dist);
-
-                int val = 3*(74 - dist);
-                acumulacion += val;
-            }
-            puntuaciones[jugadorActual] += acumulacion / num_pieces;
-            acumulacion = 0;
-        }
-
-        swap(my_colors, op_colors);
-    }
-    return puntuaciones[0] - 2 * puntuaciones[1];
-}
-
-double AIPlayer::MiHeuristicaSafeBox(const Parchis &estado, int jugador)
-{
-    int ganador = estado.getWinner();
-    int oponente = (jugador + 1) % 2;
-    vector<double> puntuaciones(2);
-    // Puntuaciones[0] es actual y puntuaciones[1] es oponente
-    puntuaciones[0] = puntuaciones[1] = 0.0;
-    if (ganador == jugador)
-        return gana;
-    else if (ganador == oponente)
-        return pierde;
-    // Colores que juega mi jugador y colores del oponente
-    vector<color> my_colors = estado.getPlayerColors(jugador);
-    vector<color> op_colors = estado.getPlayerColors(oponente);
-
-    // Recorro fichas jugador y oponente
-    for (int jugadorActual = 0; jugadorActual < 2; jugadorActual++)
-    {
-        for (int i = 0; i < my_colors.size(); i++)
-        {
-            color c = my_colors[i];
-            // Valoro que las fichas estén seguras
-            int cont = 0;
-            for (int j = 0; j < num_pieces; ++j)
-            {
-                if (estado.isSafePiece(c, j))
-                {
-                    puntuaciones[jugadorActual] += (74 - estado.distanceToGoal(c, j));
-                }
-                else
-                {
-                    puntuaciones[jugadorActual] -= (74 - estado.distanceToGoal(c, j));
-                }
-            }
-
-            int acumulacion = 0;
-            for (int j = 0; j < num_pieces; j++)
-            {
-                int dist = estado.distanceToGoal(c, j);
-                int val = 3 * (74 - dist);
-                acumulacion += val;
-            }
-            puntuaciones[jugadorActual] += acumulacion / num_pieces;
-            acumulacion = 0;
-        }
-
-        swap(my_colors, op_colors);
-    }
-    return puntuaciones[0] - puntuaciones[1];
-}
-
-double AIPlayer::MiHeuristicaSafeMejorado(const Parchis &estado, int jugador)
-{
-    int ganador = estado.getWinner();
-    int oponente = (jugador + 1) % 2;
-    vector<double> puntuaciones(2);
-    // Puntuaciones[0] es actual y puntuaciones[1] es oponente
-    puntuaciones[0] = puntuaciones[1] = 0.0;
-    if (ganador == jugador)
-        return gana;
-    else if (ganador == oponente)
-        return pierde;
-    // Colores que juega mi jugador y colores del oponente
-    vector<color> my_colors = estado.getPlayerColors(jugador);
-    vector<color> op_colors = estado.getPlayerColors(oponente);
-
+    // if (estado.isEatingMove())
+    //     puntuaciones[jugador]+=50;
     // Recorro fichas jugador y oponente
     for (int jugadorActual = 0; jugadorActual < 2; jugadorActual++)
     {
@@ -537,7 +439,115 @@ double AIPlayer::MiHeuristicaSafeMejorado(const Parchis &estado, int jugador)
                 acumulacion += val;
             }
             puntuaciones[jugadorActual] += acumulacion / num_pieces;
-            acumulacion = 0;
+        }
+
+        swap(my_colors, op_colors);
+    }
+    return puntuaciones[0] - 2 * puntuaciones[1];
+}
+
+double AIPlayer::MiHeuristicaSafePiece(const Parchis &estado, int jugador)
+{
+    int ganador = estado.getWinner();
+    int oponente = (jugador + 1) % 2;
+    vector<double> puntuaciones(2);
+    // Puntuaciones[0] es actual y puntuaciones[1] es oponente
+    puntuaciones[0] = puntuaciones[1] = 0.0;
+    if (ganador == jugador)
+        return gana;
+    else if (ganador == oponente)
+        return pierde;
+    // Colores que juega mi jugador y colores del oponente
+    vector<color> my_colors = estado.getPlayerColors(jugador);
+    vector<color> op_colors = estado.getPlayerColors(oponente);
+
+    // if (estado.isEatingMove())
+    //     puntuaciones[jugador]+=50;
+    // Recorro fichas jugador y oponente
+    for (int jugadorActual = 0; jugadorActual < 2; jugadorActual++)
+    {
+        int betterValue = static_cast<int>(pierde);
+        for (int i = 0; i < my_colors.size(); i++)
+        {
+            color c = my_colors[i];
+            // Valoro que las fichas estén seguras
+            int cont = 0;
+            for (int j = 0; j < num_pieces; ++j)
+            {
+                if (estado.isSafePiece(c, j))
+                {
+                    puntuaciones[jugadorActual] += (74 - estado.distanceToGoal(c, j));
+                }
+                else
+                {
+                    puntuaciones[jugadorActual] -= (74 - estado.distanceToGoal(c, j));
+                }
+            }
+
+            int acumulacion = 0;
+            for (int j = 0; j < num_pieces; j++)
+            {
+                int dist = estado.distanceToGoal(c, j);
+                int val = 3 * (74 - dist);
+                acumulacion += val;
+            }
+            puntuaciones[jugadorActual] += acumulacion / num_pieces;
+        }
+
+        swap(my_colors, op_colors);
+    }
+    return puntuaciones[0] - puntuaciones[1];
+}
+
+double AIPlayer::MiHeuristicaSafeMejorado(const Parchis &estado, int jugador)
+{
+    int ganador = estado.getWinner();
+    int oponente = (jugador + 1) % 2;
+    vector<double> puntuaciones(2);
+    // Puntuaciones[0] es actual y puntuaciones[1] es oponente
+    puntuaciones[0] = puntuaciones[1] = 0.0;
+    if (ganador == jugador)
+        return gana;
+    else if (ganador == oponente)
+        return pierde;
+    // Colores que juega mi jugador y colores del oponente
+    vector<color> my_colors = estado.getPlayerColors(jugador);
+    vector<color> op_colors = estado.getPlayerColors(oponente);
+
+    // if (estado.isEatingMove())
+    //     puntuaciones[jugador]+=50;
+    // Recorro fichas jugador y oponente
+    for (int jugadorActual = 0; jugadorActual < 2; jugadorActual++)
+    {
+        int betterValue = static_cast<int>(pierde);
+        for (int i = 0; i < my_colors.size(); i++)
+        {
+            color c = my_colors[i];
+            // Valoro que haya fichas en el objetivo
+            // puntuaciones[jugadorActual] += 10 * estado.piecesAtGoal(c);
+            // Valoro que las fichas estén seguras
+            int cont = 0;
+            for (int j = 0; j < num_pieces; ++j)
+            {
+                if (estaSegura(estado, (jugadorActual + jugador) % 2, c, j))
+                // if (estado.isSafePiece(c, j))
+                {
+                    puntuaciones[jugadorActual] += (74 - estado.distanceToGoal(c, j));
+                }
+                else
+                {
+                    puntuaciones[jugadorActual] -= (74 - estado.distanceToGoal(c, j));
+                }
+            }
+
+            int acumulacion = 0;
+            for (int j = 0; j < num_pieces; j++)
+            {
+                int dist = estado.distanceToGoal(c, j);
+                int val = 3 * (74 - dist);
+                acumulacion += val;
+            }
+            puntuaciones[jugadorActual] += acumulacion / num_pieces;
         }
 
         swap(my_colors, op_colors);
